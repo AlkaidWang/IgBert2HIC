@@ -1,27 +1,32 @@
 ---
 tags:
 - antibody language model
-- antibody
-- protein language model
-base_model: Exscientia/IgBert_unpaired
+- fine tuning 
+- HIC prediction 
+base_model: Exscientia/IgBert_paired
+fine-tuned model: https://huggingface.co/BoyiXia/IgBERT_HIC/tree/main
 license: mit 
 ---
 
 # IgBert
 
-Model pretrained on protein and antibody sequences using a masked language modeling (MLM) objective. It was introduced in the paper [Large scale paired antibody language models](https://arxiv.org/abs/2403.17889). 
+IgBert Model pretrained on protein and antibody sequences ([Observed Antibody Space](https://opig.stats.ox.ac.uk/webapps/oas/)) using a masked language modeling (MLM) objective. It was introduced in the paper [Large scale paired antibody language models](https://arxiv.org/abs/2403.17889). 
 
-The model is finetuned from IgBert-unpaired using paired antibody sequences from the [Observed Antibody Space](https://opig.stats.ox.ac.uk/webapps/oas/).
+IgBert_HIC fine-tuned Model trained on internal HIC experimental data. 
 
 # Use
+
+The basic usage is almost the same as IgBert. Before using the prediction, the model file should be download from huggingface and put into the "HIC" directory. 
+
+The usage of IgBert:　
 
 The model and tokeniser can be loaded using the `transformers` library
 
 ```python
 from transformers import BertModel, BertTokenizer
 
-tokeniser = BertTokenizer.from_pretrained("Exscientia/IgBert", do_lower_case=False)
-model = BertModel.from_pretrained("Exscientia/IgBert", add_pooling_layer=False)
+tokeniser = BertTokenizer.from_pretrained("HIC", do_lower_case=False)
+model = BertModel.from_pretrained("HIC", add_pooling_layer=False)
 ```
 
 The tokeniser is used to prepare batch inputs 
@@ -64,19 +69,3 @@ output = model(
 
 residue_embeddings = output.last_hidden_state
 ```
-
-To obtain a sequence representation, the residue tokens can be averaged over like so
-
-```python
-import torch
-
-# mask special tokens before summing over embeddings
-residue_embeddings[tokens["special_tokens_mask"] == 1] = 0
-sequence_embeddings_sum = residue_embeddings.sum(1)
-
-# average embedding by dividing sum by sequence lengths
-sequence_lengths = torch.sum(tokens["special_tokens_mask"] == 0, dim=1)
-sequence_embeddings = sequence_embeddings_sum / sequence_lengths.unsqueeze(1)
-```
-
-For sequence level fine-tuning the model can be loaded with a pooling head by setting `add_pooling_layer=True` and using `output.pooler_output` in the down-stream task.
